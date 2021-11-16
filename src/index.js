@@ -2,13 +2,12 @@ const {
   BaseKonnector,
   requestFactory,
   scrape,
-  log,
-  utils
+  log
 } = require('cozy-konnector-libs')
 const request = requestFactory({
   // The debug mode shows all the details about HTTP requests and responses. Very useful for
   // debugging but very verbose. This is why it is commented out by default
-  // debug: true,
+  debug: true,
   // Activates [cheerio](https://cheerio.js.org/) parsing on each page
   cheerio: true,
   // If cheerio is activated do not forget to deactivate json parsing (which is activated by
@@ -18,8 +17,8 @@ const request = requestFactory({
   jar: true
 })
 
-const VENDOR = 'template'
-const baseUrl = 'http://books.toscrape.com'
+const VENDOR = 'ileo'
+const baseUrl = 'https://www.mel-ileo.fr'
 
 module.exports = new BaseKonnector(start)
 
@@ -31,94 +30,117 @@ module.exports = new BaseKonnector(start)
 async function start(fields, cozyParameters) {
   log('info', 'Authenticating ...')
   if (cozyParameters) log('debug', 'Found COZY_PARAMETERS')
-  await authenticate.bind(this)(fields.login, fields.password)
+  await authenticate(fields.login, fields.password)
   log('info', 'Successfully logged in')
   // The BaseKonnector instance expects a Promise as return of the function
   log('info', 'Fetching the list of documents')
-  const $ = await request(`${baseUrl}/index.html`)
+  const $ = await request(`${baseUrl}/mon-espace-compte-consulter-facture.aspx`)
   // cheerio (https://cheerio.js.org/) uses the same api as jQuery (http://jquery.com/)
   log('info', 'Parsing list of documents')
-  const documents = await parseDocuments($)
+  const documents = await parseDocuments($, fields.login)
 
   // Here we use the saveBills function even if what we fetch are not bills,
   // but this is the most common case in connectors
   log('info', 'Saving data to Cozy')
-  await this.saveBills(documents, fields, {
+  log('info', fields, 'fields')
+  await this.saveBills(documents, fields.folderPath, {
     // This is a bank identifier which will be used to link bills to bank operations. These
     // identifiers should be at least a word found in the title of a bank operation related to this
     // bill. It is not case sensitive.
-    identifiers: ['books']
+    identifiers: ['Eau De La Metropole']
   })
 }
 
 // This shows authentication using the [signin function](https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#module_signin)
 // even if this in another domain here, but it works as an example
-function authenticate(username, password) {
-  return this.signin({
-    url: `http://quotes.toscrape.com/login`,
-    formSelector: 'form',
-    formData: { username, password },
-    // The validate function will check if the login request was a success. Every website has a
-    // different way to respond: HTTP status code, error message in HTML ($), HTTP redirection
-    // (fullResponse.request.uri.href)...
-    validate: (statusCode, $, fullResponse) => {
-      log(
-        'debug',
-        fullResponse.request.uri.href,
-        'not used here but should be useful for other connectors'
-      )
-      // The login in toscrape.com always works except when no password is set
-      if ($(`a[href='/logout']`).length === 1) {
-        return true
-      } else {
-        // cozy-konnector-libs has its own logging function which format these logs with colors in
-        // standalone and dev mode and as JSON in production mode
-        log('error', $('.error').text())
-        return false
-      }
-    }
+async function authenticate(username, password) {
+  const loginForm = {
+    login: username,
+    pass: password,
+    connect: 'OK'
+  }
+  const res = await request.post(`${baseUrl}/default.aspx`, {
+    form: loginForm,
+    resolveWithFullResponse: true,
+    simple: false
   })
+  log('debug', 'res.req.path', res.req.path)
+  if (res.req.path != '/mon-espace-perso.aspx') {
+    throw new Error('LOGIN_FAILED')
+  }
 }
 
 // The goal of this function is to parse a HTML page wrapped by a cheerio instance
 // and return an array of JS objects which will be saved to the cozy by saveBills
 // (https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#savebills)
-function parseDocuments($) {
+function parseDocuments($, login) {
   // You can find documentation about the scrape function here:
   // https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#scrape
+  const refContract = login
   const docs = scrape(
     $,
     {
-      title: {
-        sel: 'h3 a',
-        attr: 'title'
+      date: {
+        sel: 'td:nth-child(1)',
+        parse: text => text.replace(/\//g, '-').trim()
+      },
+      billNumber: {
+        sel: 'td:nth-child(2)'
       },
       amount: {
-        sel: '.price_color',
+        sel: 'td:nth-child(3)',
         parse: normalizePrice
       },
-      fileurl: {
-        sel: 'img',
-        attr: 'src',
-        parse: src => `${baseUrl}/${src}`
+      billPath: {
+        sel: 'td:nth-child(5) a',
+        attr: 'href'
       }
     },
-    'article'
+    '#mieux-consommer table tbody tr:not(:first-child)'
   )
-  return docs.map(doc => ({
-    ...doc,
-    // The saveBills function needs a date field
-    // even if it is a little artificial here (these are not real bills)
-    date: new Date(),
-    currency: 'EUR',
-    filename: `${utils.formatDate(new Date())}_${VENDOR}_${doc.amount.toFixed(
-      2
-    )}EUR${doc.vendorRef ? '_' + doc.vendorRef : ''}.jpg`,
-    vendor: VENDOR
-  }))
+  return docs.map(bill => {
+    const date = normalizeDate(bill.date)
+    var data = {
+      ...bill,
+      refContract,
+      filename: `${formatDate(date)}_${bill.billNumber}_${bill.amount}EUR.pdf`,
+      currency: '€',
+      date: date,
+      vendor: VENDOR,
+      vendorRef: bill.billNumber,
+      amount: parseFloat(bill.amount)
+    }
+    if (bill.billPath) {
+      data['fileurl'] = `${baseUrl}/${bill.billPath}`
+    }
+    return data
+  })
+}
+
+function normalizeDate(date) {
+  const [day, month, year] = date.split('-')
+  return new Date(`${year}-${month}-${day}`)
 }
 
 // Convert a price string to a float
 function normalizePrice(price) {
   return parseFloat(price.replace('£', '').trim())
+}
+
+// Return a string representation of the date that follows this format:
+// "YYYY-MM-DD". Leading "0" for the day and the month are added if needed.
+function formatDate(date) {
+  let month = date.getMonth() + 1
+  if (month < 10) {
+    month = '0' + month
+  }
+
+  let day = date.getDate()
+  if (day < 10) {
+    day = '0' + day
+  }
+
+  let year = date.getFullYear()
+
+  return `${year}${month}${day}`
 }

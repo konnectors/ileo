@@ -1,13 +1,13 @@
 {
-  "name": "cozy-konnector-template",
+  "name": "cozy-konnector-ileo",
   "version": "1.0.0",
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git@github.com:konnectors/template.git"
+    "url": "git@github.com:mikael-s/cozy-konnector-ileo.git"
   },
   "keywords": [],
-  "author": "Cozy Cloud",
+  "author": "Mikaël Salson",
   "license": "AGPL-3.0",
   "main": "./src/index.js",
   "eslintConfig": {

@@ -1,4 +1,4 @@
-[Cozy][cozy] <YOUR SUPER NEW KONNECTOR NAME>
+[Cozy][cozy] Ileo
 =======================================
 
 What's Cozy?
@@ -11,8 +11,8 @@ What's Cozy?
 What is this konnector about ?
 ------------------------------
 
-This konnector retrieves your <SOME DATA> and <SOME OTHER DATA> from <SERVICE>
-<YOUR DESCRIPTION HERE>
+This konnector retrieves your bills from [Ileo](https://www.mel-ileo.fr/), the water supplier in Lille area.
+
 
 ### Open a Pull-Request
 
