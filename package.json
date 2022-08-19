@@ -4,12 +4,11 @@
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git@github.com:mikael-s/cozy-konnector-ileo.git"
+    "url": "git@github.com:konnectors/ileo.git"
   },
   "keywords": [],
   "author": "Mikaël Salson",
   "license": "AGPL-3.0",
-  "main": "./src/index.js",
   "eslintConfig": {
     "extends": [
       "cozy-app"
