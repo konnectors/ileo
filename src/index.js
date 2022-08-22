@@ -6,7 +6,8 @@ const {
   BaseKonnector,
   requestFactory,
   scrape,
-  log
+  log,
+  cozyClient
 } = require('cozy-konnector-libs')
 const request = requestFactory({
   // The debug mode shows all the details about HTTP requests and responses. Very useful for
@@ -23,6 +24,8 @@ const request = requestFactory({
 
 const VENDOR = 'ileo'
 const baseUrl = 'https://www.mel-ileo.fr'
+const models = cozyClient.new.models
+const { Qualification } = models.document
 
 module.exports = new BaseKonnector(start)
 
@@ -112,7 +115,8 @@ function parseDocuments($, login) {
       date: date,
       vendor: VENDOR,
       vendorRef: bill.billNumber,
-      amount: parseFloat(bill.amount)
+      amount: parseFloat(bill.amount),
+      qualification: Qualification.getByLabel('water_invoice')
     }
     if (bill.billPath) {
       data['fileurl'] = `${baseUrl}/${bill.billPath}`

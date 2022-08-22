@@ -79,6 +79,9 @@
       }
     }
   },
+  "features": [
+    "DOC_QUALIFICATION_V2"
+  ],
   "banksTransactionRegExp": "\\bEau De La Metropole Europe\\b",
   "manifest_version": "2"
 }
