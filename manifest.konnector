@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Ileo",
   "type": "konnector",
   "language": "node",
@@ -8,7 +8,9 @@
   "source": "git@github.com:konnectors/ileo.git",
   "editor": "Cozy",
   "vendor_link": "https://www.mel-ileo.fr/",
-  "categories": ["energy"],
+  "categories": [
+    "energy"
+  ],
   "fields": {
     "login": {
       "type": "text"
@@ -17,7 +19,11 @@
       "type": "password"
     }
   },
-  "folders": [{"defaultDir": "$administrative/$konnector/$account"}],
+  "folders": [
+    {
+      "defaultDir": "$administrative/$konnector/$account"
+    }
+  ],
   "data_types": [
     "bill"
   ],
@@ -40,7 +46,10 @@
     "name": "Mikaël Salson",
     "url": "https://github.com/mikael-s"
   },
-  "langs": ["fr", "en"],
+  "langs": [
+    "fr",
+    "en"
+  ],
   "locales": {
     "fr": {
       "short_description": "Connecteur Ileo",
