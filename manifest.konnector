@@ -88,6 +88,9 @@
       }
     }
   },
+  "qualification_labels": [
+    "energy_invoice"
+  ],
   "features": [
     "DOC_QUALIFICATION_V2"
   ],
